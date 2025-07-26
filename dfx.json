@@ -10,10 +10,9 @@
         "HarvestX_backend"
       ],
       "source": [
-        "src/HarvestX_frontend/dist"
+        "src/HarvestX_frontend/build"
       ],
-      "type": "assets",
-      "workspace": "HarvestX_frontend"
+      "type": "assets"
     },
     "internet_identity": {
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
