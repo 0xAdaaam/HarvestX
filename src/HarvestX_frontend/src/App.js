@@ -251,7 +251,7 @@ const HarvestXApp = () => {
             <div className="bg-white rounded-2xl shadow-xl p-8">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🪙</span>
+                  <span className="text-3xl">💰</span>
                 </div>
                 <h2 className="text-3xl font-bold text-green-800 mb-2">Create Your Token</h2>
                 <p className="text-green-600">Launch your token on the HarvestX platform</p>
@@ -327,7 +327,7 @@ const HarvestXApp = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl flex items-center justify-center">
-                    <span className="text-3xl">🪙</span>
+                    <span className="text-3xl">💰</span>
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-green-800">{tokenInfo.token_name}</h2>
