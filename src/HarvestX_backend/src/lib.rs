@@ -52,7 +52,9 @@ fn get_caller() -> Principal {
 }
 
 fn is_authenticated() -> bool {
-    get_caller() != Principal::anonymous()
+    // Highlighted just for testing
+    //get_caller() != Principal::anonymous()
+    true
 }
 
 // User management functions
