@@ -1,12 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Wheat, TrendingUp, User, Wallet } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useICP";
+import { icpService } from "@/services/icpService";
 
 const Navigation = () => {
   const location = useLocation();
+  const { user } = useCurrentUser();
 
   const isActive = (path: string) => location.pathname === path;
 
+  const isFarmer = user && 'Farmer' in user.role;
+  const isInvestor = user && 'Investor' in user.role;
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
@@ -42,6 +47,7 @@ const Navigation = () => {
             >
               Marketplace
             </Link>
+
             <Link
               to="/investor-dashboard"
               className={`px-3 py-2 rounded-md transition-colors ${isActive("/investor-dashboard") ? "bg-primary text-primary-foreground" : "hover:bg-muted"
@@ -49,6 +55,16 @@ const Navigation = () => {
             >
               Invest
             </Link>
+
+
+            <Link
+              to="/farmer-dashboard"
+              className={`px-3 py-2 rounded-md transition-colors ${isActive("/farmer-dashboard") ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                }`}
+            >
+              My Farm
+            </Link>
+
           </div>
 
           <div className="flex items-center gap-3">

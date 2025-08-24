@@ -3,8 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, TrendingUp, Users, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "@/hooks/useICP";
 
 const Home = () => {
+  const { user } = useCurrentUser();
+  const isFarmer = user && 'Farmer' in user.role;
+  const isInvestor = user && 'Investor' in user.role;
+
   const features = [
     {
       icon: <Shield className="h-8 w-8 text-primary" />,
@@ -31,7 +36,7 @@ const Home = () => {
   return (
     <div>
       <HeroSection />
-      
+
       {/* Features Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -71,18 +76,54 @@ const Home = () => {
               Join thousands of farmers and investors who are already building the future of sustainable agriculture on HarvestX.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/create-listing">
-                <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                  Start as Farmer
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
-              <Link to="/investor-dashboard">
-                <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                  Start Investing
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
+              {isFarmer && (
+                <>
+                  <Link to="/create-listing">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      List Your Crops
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/farmer-dashboard">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      My Farm Dashboard
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {isInvestor && (
+                <>
+                  <Link to="/marketplace">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      Browse Crops
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/investor-dashboard">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      Start Investing
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {!user && (
+                <>
+                  <Link to="/register">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      Join as Farmer
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button variant="outline" size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                      Start Investing
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
