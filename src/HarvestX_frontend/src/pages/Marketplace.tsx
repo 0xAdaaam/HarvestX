@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { productTypes, qualityGrades } from "@/data/mockData";
 import { Calendar, MapPin, Package, Search, TrendingUp, User, AlertCircle, Loader2 } from "lucide-react";
 import { useICPOffers } from "@/hooks/useICP";
-import { icpService } from "@/services/icpService";
+import { icpService, InvestmentOffer } from "@/services/icpService";
+import { InvestmentRequestDialog } from "@/components/InvestmentRequestDialog";
 import cropsIcon from "@/assets/crops-icon.jpg";
 
 const Marketplace = () => {
@@ -15,19 +16,21 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<InvestmentOffer | null>(null);
 
   const filteredListings = useMemo(() => {
     return offers.filter(offer => {
       const productTypeString = icpService.getProductTypeString(offer.product_type);
       const qualityGradeString = icpService.getQualityGradeString(offer.quality_grade);
       const statusString = icpService.getOfferStatusString(offer.status);
-      
+
       const matchesSearch = offer.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           offer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           offer.farmer.toString().toLowerCase().includes(searchTerm.toLowerCase());
+        offer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.farmer.toString().toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = selectedType === "all" || productTypeString === selectedType;
       const matchesGrade = selectedGrade === "all" || qualityGradeString === selectedGrade;
-      
+
       return matchesSearch && matchesType && matchesGrade && statusString === "Active";
     });
   }, [offers, searchTerm, selectedType, selectedGrade]);
@@ -64,7 +67,7 @@ const Marketplace = () => {
               </p>
             </div>
           </div>
-          
+
           {/* Filters */}
           <Card className="p-6 shadow-soft">
             <div className="grid md:grid-cols-4 gap-4">
@@ -77,7 +80,7 @@ const Marketplace = () => {
                   className="pl-10"
                 />
               </div>
-              
+
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Product Types" />
@@ -89,7 +92,7 @@ const Marketplace = () => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               <Select value={selectedGrade} onValueChange={setSelectedGrade}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Quality Grades" />
@@ -101,7 +104,7 @@ const Marketplace = () => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               <Button variant="outline">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Sort by Price
@@ -148,7 +151,7 @@ const Marketplace = () => {
               const productTypeString = icpService.getProductTypeString(offer.product_type);
               const qualityGradeString = icpService.getQualityGradeString(offer.quality_grade);
               const statusString = icpService.getOfferStatusString(offer.status);
-              
+
               return (
                 <Card key={offer.id} className="shadow-medium hover:shadow-strong transition-all duration-300 bg-gradient-card border-0">
                   <CardHeader className="pb-3">
@@ -162,12 +165,12 @@ const Marketplace = () => {
                       {offer.farmer.toString().slice(0, 10)}...
                     </CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {offer.description}
                     </p>
-                    
+
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-muted-foreground" />
@@ -191,7 +194,14 @@ const Marketplace = () => {
                       <div className="text-sm text-muted-foreground mb-2">
                         Minimum Investment: <span className="font-semibold text-foreground">${Number(offer.minimum_investment)}</span>
                       </div>
-                      <Button className="w-full" variant="default">
+                      <Button
+                        className="w-full"
+                        variant="default"
+                        onClick={() => {
+                          setSelectedOffer(offer);
+                          setDialogOpen(true);
+                        }}
+                      >
                         Make Investment Offer
                       </Button>
                     </div>
@@ -210,6 +220,15 @@ const Marketplace = () => {
           </div>
         )}
       </div>
+
+      {/* Investment Request Dialog */}
+      {selectedOffer && (
+        <InvestmentRequestDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          offer={selectedOffer}
+        />
+      )}
     </div>
   );
 };

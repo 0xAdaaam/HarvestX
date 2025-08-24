@@ -3,19 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockInvestmentRequests, mockCropListings, type InvestmentRequest } from "@/data/mockData";
 import { Calendar, DollarSign, Package, TrendingUp, User, Wallet, Target, CheckCircle, Clock, XCircle, Loader2, AlertCircle } from "lucide-react";
-import { useICPOffers, useICPStats, useICPHealth } from "@/hooks/useICP";
+import { useICPOffers, useICPStats, useICPHealth, useInvestorRequests } from "@/hooks/useICP";
 import { icpService } from "@/services/icpService";
 
 const InvestorDashboard = () => {
   const { offers, loading: offersLoading, error: offersError } = useICPOffers();
   const { stats, loading: statsLoading } = useICPStats();
   const { isHealthy, loading: healthLoading } = useICPHealth();
-  
-  const [myRequests] = useState<InvestmentRequest[]>(mockInvestmentRequests);
-  
-  const featuredOpportunities = offers.filter(offer => 
+  const { requests: myRequests, loading: requestsLoading, error: requestsError } = useInvestorRequests();
+
+  const featuredOpportunities = offers.filter(offer =>
     icpService.getOfferStatusString(offer.status) === "Active"
   ).slice(0, 3);
 
@@ -40,11 +38,11 @@ const InvestorDashboard = () => {
   };
 
   const totalInvested = myRequests
-    .filter(req => req.status === "Accepted")
-    .reduce((sum, req) => sum + req.totalOffered, 0);
+    .filter(req => icpService.getRequestStatusString(req.status) === "Accepted")
+    .reduce((sum, req) => sum + req.total_offered, 0);
 
-  const pendingRequests = myRequests.filter(req => req.status === "Pending").length;
-  const activeInvestments = myRequests.filter(req => req.status === "Accepted").length;
+  const pendingRequests = myRequests.filter(req => icpService.getRequestStatusString(req.status) === "Pending").length;
+  const activeInvestments = myRequests.filter(req => icpService.getRequestStatusString(req.status) === "Accepted").length;
 
   return (
     <div className="min-h-screen bg-muted/30 py-8">
@@ -186,7 +184,7 @@ const InvestorDashboard = () => {
                   const productTypeString = icpService.getProductTypeString(offer.product_type);
                   const qualityGradeString = icpService.getQualityGradeString(offer.quality_grade);
                   const statusString = icpService.getOfferStatusString(offer.status);
-                  
+
                   return (
                     <Card key={offer.id} className="shadow-medium hover:shadow-strong transition-all duration-300 bg-gradient-card border-0">
                       <CardHeader className="pb-3">
@@ -200,7 +198,7 @@ const InvestorDashboard = () => {
                           {offer.farmer.toString().slice(0, 10)}...
                         </CardDescription>
                       </CardHeader>
-                      
+
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center gap-2">
@@ -247,71 +245,84 @@ const InvestorDashboard = () => {
           <TabsContent value="portfolio" className="space-y-6">
             <h2 className="text-2xl font-bold">My Investment Requests</h2>
 
-            <div className="space-y-4">
-              {myRequests.map((request) => {
-                const listing = mockCropListings.find(l => l.id === request.offerId);
-                
-                return (
-                  <Card key={request.id} className="shadow-soft">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            {listing?.productName || 'Unknown Product'}
-                            <Badge className={getRequestStatusColor(request.status)}>
-                              {getRequestIcon(request.status)}
-                              {request.status}
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription>
-                            Request to {listing?.farmerName || 'Unknown Farmer'}
-                          </CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-primary">
-                            ${request.totalOffered.toLocaleString()}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {request.requestedQuantity}kg @ ${request.offeredPricePerKg}/kg
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-2">Message:</p>
-                          <p className="text-sm">{request.message}</p>
-                        </div>
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Created:</span>
-                            <span>{request.createdAt}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Expires:</span>
-                            <span>{request.expiresAt}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {request.status === 'Pending' && (
-                        <div className="flex gap-2 mt-4">
-                          <Button variant="outline" size="sm">
-                            Edit Request
-                          </Button>
-                          <Button variant="destructive" size="sm">
-                            Cancel Request
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            {requestsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Loading your investment requests...</span>
+              </div>
+            ) : requestsError ? (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Failed to load requests</h3>
+                <p className="text-muted-foreground">{requestsError}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myRequests.map((request) => {
+                  const statusString = icpService.getRequestStatusString(request.status);
 
-            {myRequests.length === 0 && (
+                  return (
+                    <Card key={request.id} className="shadow-soft">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="flex items-center gap-2">
+                              Investment Request
+                              <Badge className={getRequestStatusColor(statusString)}>
+                                {getRequestIcon(statusString)}
+                                {statusString}
+                              </Badge>
+                            </CardTitle>
+                            <CardDescription>
+                              Request for Offer ID: {request.offer_id}
+                            </CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-primary">
+                              ${request.total_offered.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {Number(request.requested_quantity)}kg @ ${request.offered_price_per_kg}/kg
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-2">Message:</p>
+                            <p className="text-sm">{request.message}</p>
+                          </div>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Created:</span>
+                              <span>{new Date(Number(request.created_at) / 1000000).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Expires:</span>
+                              <span>{new Date(Number(request.expires_at) / 1000000).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {statusString === 'Pending' && (
+                          <div className="flex gap-2 mt-4">
+                            <Button variant="outline" size="sm">
+                              Edit Request
+                            </Button>
+                            <Button variant="destructive" size="sm">
+                              Cancel Request
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {myRequests.length === 0 && !requestsLoading && !requestsError && (
               <div className="text-center py-12">
                 <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No investment requests yet</h3>

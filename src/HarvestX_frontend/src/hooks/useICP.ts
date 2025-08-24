@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { icpService, InvestmentOffer, PlatformStats, CreateOfferRequest, UserProfile, RegisterUserRequest } from '@/services/icpService';
+import { useState, useEffect, useCallback } from 'react';
+import { icpService, InvestmentOffer, PlatformStats, CreateOfferRequest, UserProfile, RegisterUserRequest, CreateInvestmentRequest, InvestmentRequest, RespondToRequestRequest } from '@/services/icpService';
 
 export const useICPOffers = () => {
   const [offers, setOffers] = useState<InvestmentOffer[]>([]);
@@ -145,4 +145,128 @@ export const useRegisterUser = () => {
   };
 
   return { register, loading, error };
+};
+
+// New hooks for investment requests
+export const useCreateInvestmentRequest = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createRequest = useCallback(async (requestData: CreateInvestmentRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await icpService.createInvestmentRequest(requestData);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create investment request';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { createRequest, loading, error };
+};
+
+export const useInvestorRequests = () => {
+  const [requests, setRequests] = useState<InvestmentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await icpService.getInvestorRequests();
+      setRequests(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch investor requests';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  return { requests, loading, error, refetch: fetchRequests };
+};
+
+export const useFarmerOffers = () => {
+  const [offers, setOffers] = useState<InvestmentOffer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOffers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await icpService.getFarmerOffers();
+      setOffers(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch farmer offers';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOffers();
+  }, [fetchOffers]);
+
+  return { offers, loading, error, refetch: fetchOffers };
+};
+
+export const useRequestsForOffer = (offerId: string) => {
+  const [requests, setRequests] = useState<InvestmentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRequests = useCallback(async () => {
+    if (!offerId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await icpService.getRequestsForOffer(offerId);
+      setRequests(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch requests for offer';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [offerId]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  return { requests, loading, error, refetch: fetchRequests };
+};
+
+export const useRespondToRequest = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const respond = useCallback(async (requestData: RespondToRequestRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await icpService.respondToInvestmentRequest(requestData);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to respond to request';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { respond, loading, error };
 };

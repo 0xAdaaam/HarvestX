@@ -38,6 +38,11 @@ export type RequestStatus =
   | { Expired: null }
   | { Pending: null };
 
+export type TransactionStatus =
+  | { Tokenized: null }
+  | { Confirmed: null }
+  | { Completed: null };
+
 export interface InvestmentOffer {
   id: string;
   status: OfferStatus;
@@ -90,6 +95,40 @@ export interface CreateInvestmentRequest {
   message: string;
   offered_price_per_kg: number;
   requested_quantity: bigint;
+}
+
+export interface InvestmentRequest {
+  id: string;
+  status: RequestStatus;
+  updated_at: bigint;
+  total_offered: number;
+  created_at: bigint;
+  offer_id: string;
+  message: string;
+  offered_price_per_kg: number;
+  requested_quantity: bigint;
+  expires_at: bigint;
+  investor: Principal;
+}
+
+export interface Transaction {
+  id: string;
+  request_id: string;
+  status: TransactionStatus;
+  updated_at: bigint;
+  tokenized_at?: bigint;
+  total_amount: number;
+  created_at: bigint;
+  offer_id: string;
+  quantity: bigint;
+  price_per_kg: number;
+  farmer: Principal;
+  investor: Principal;
+}
+
+export interface RespondToRequestRequest {
+  request_id: string;
+  accept: boolean;
 }
 
 export interface RegisterUserRequest {
@@ -177,10 +216,64 @@ const idlFactory = ({ IDL }: any) => {
     'farmer': IDL.Principal,
     'harvest_date': IDL.Text,
   });
+  const CreateInvestmentRequest = IDL.Record({
+    'offer_id': IDL.Text,
+    'message': IDL.Text,
+    'offered_price_per_kg': IDL.Float64,
+    'requested_quantity': IDL.Nat64,
+  });
+  const RequestStatus = IDL.Variant({
+    'Rejected': IDL.Null,
+    'Accepted': IDL.Null,
+    'Cancelled': IDL.Null,
+    'Expired': IDL.Null,
+    'Pending': IDL.Null,
+  });
+  const InvestmentRequest = IDL.Record({
+    'id': IDL.Text,
+    'status': RequestStatus,
+    'updated_at': IDL.Nat64,
+    'total_offered': IDL.Float64,
+    'created_at': IDL.Nat64,
+    'offer_id': IDL.Text,
+    'message': IDL.Text,
+    'offered_price_per_kg': IDL.Float64,
+    'requested_quantity': IDL.Nat64,
+    'expires_at': IDL.Nat64,
+    'investor': IDL.Principal,
+  });
+  const TransactionStatus = IDL.Variant({
+    'Tokenized': IDL.Null,
+    'Confirmed': IDL.Null,
+    'Completed': IDL.Null,
+  });
+  const Transaction = IDL.Record({
+    'id': IDL.Text,
+    'request_id': IDL.Text,
+    'status': TransactionStatus,
+    'updated_at': IDL.Nat64,
+    'tokenized_at': IDL.Opt(IDL.Nat64),
+    'total_amount': IDL.Float64,
+    'created_at': IDL.Nat64,
+    'offer_id': IDL.Text,
+    'quantity': IDL.Nat64,
+    'price_per_kg': IDL.Float64,
+    'farmer': IDL.Principal,
+    'investor': IDL.Principal,
+  });
+  const RespondToRequestRequest = IDL.Record({
+    'request_id': IDL.Text,
+    'accept': IDL.Bool,
+  });
 
   return IDL.Service({
     'create_agricultural_offer': IDL.Func([CreateOfferRequest], [IDL.Record({
       'data': IDL.Opt(InvestmentOffer),
+      'error': IDL.Opt(IDL.Text),
+      'success': IDL.Bool,
+    })], []),
+    'create_investment_request': IDL.Func([CreateInvestmentRequest], [IDL.Record({
+      'data': IDL.Opt(InvestmentRequest),
       'error': IDL.Opt(IDL.Text),
       'success': IDL.Bool,
     })], []),
@@ -189,6 +282,26 @@ const idlFactory = ({ IDL }: any) => {
       'error': IDL.Opt(IDL.Text),
       'success': IDL.Bool,
     })], ['query']),
+    'get_farmer_offers': IDL.Func([], [IDL.Record({
+      'data': IDL.Opt(IDL.Vec(InvestmentOffer)),
+      'error': IDL.Opt(IDL.Text),
+      'success': IDL.Bool,
+    })], ['query']),
+    'get_investor_requests': IDL.Func([], [IDL.Record({
+      'data': IDL.Opt(IDL.Vec(InvestmentRequest)),
+      'error': IDL.Opt(IDL.Text),
+      'success': IDL.Bool,
+    })], ['query']),
+    'get_requests_for_offer': IDL.Func([IDL.Text], [IDL.Record({
+      'data': IDL.Opt(IDL.Vec(InvestmentRequest)),
+      'error': IDL.Opt(IDL.Text),
+      'success': IDL.Bool,
+    })], ['query']),
+    'respond_to_investment_request': IDL.Func([RespondToRequestRequest], [IDL.Record({
+      'data': IDL.Opt(InvestmentRequest),
+      'error': IDL.Opt(IDL.Text),
+      'success': IDL.Bool,
+    })], []),
     'get_platform_stats': IDL.Func([], [IDL.Record({
       'data': IDL.Opt(IDL.Record({
         'total_requests': IDL.Nat64,
@@ -400,6 +513,91 @@ class ICPService {
     if ('Completed' in status) return 'Completed';
     if ('Expired' in status) return 'Expired';
     return 'Unknown';
+  }
+
+  getRequestStatusString(status: RequestStatus): string {
+    if ('Pending' in status) return 'Pending';
+    if ('Accepted' in status) return 'Accepted';
+    if ('Rejected' in status) return 'Rejected';
+    if ('Cancelled' in status) return 'Cancelled';
+    if ('Expired' in status) return 'Expired';
+    return 'Unknown';
+  }
+
+  // New service methods
+  async createInvestmentRequest(requestData: CreateInvestmentRequest): Promise<InvestmentRequest> {
+    try {
+      const response = await this.actor.create_investment_request(requestData);
+      if (response.success) {
+        const data = this.unwrapOpt<InvestmentRequest>(response.data);
+        if (data) return data;
+      }
+      const err = this.unwrapText(response.error) || 'Failed to create investment request';
+      throw new Error(err);
+    } catch (error) {
+      console.error('Failed to create investment request:', error);
+      throw error;
+    }
+  }
+
+  async getFarmerOffers(): Promise<InvestmentOffer[]> {
+    try {
+      const response = await this.actor.get_farmer_offers();
+      if (response.success) {
+        const data = this.unwrapOpt<InvestmentOffer[]>(response.data) ?? [];
+        return data;
+      }
+      const err = this.unwrapText(response.error) || 'Failed to fetch farmer offers';
+      throw new Error(err);
+    } catch (error) {
+      console.error('Failed to get farmer offers:', error);
+      throw error;
+    }
+  }
+
+  async getInvestorRequests(): Promise<InvestmentRequest[]> {
+    try {
+      const response = await this.actor.get_investor_requests();
+      if (response.success) {
+        const data = this.unwrapOpt<InvestmentRequest[]>(response.data) ?? [];
+        return data;
+      }
+      const err = this.unwrapText(response.error) || 'Failed to fetch investor requests';
+      throw new Error(err);
+    } catch (error) {
+      console.error('Failed to get investor requests:', error);
+      throw error;
+    }
+  }
+
+  async getRequestsForOffer(offerId: string): Promise<InvestmentRequest[]> {
+    try {
+      const response = await this.actor.get_requests_for_offer(offerId);
+      if (response.success) {
+        const data = this.unwrapOpt<InvestmentRequest[]>(response.data) ?? [];
+        return data;
+      }
+      const err = this.unwrapText(response.error) || 'Failed to fetch requests for offer';
+      throw new Error(err);
+    } catch (error) {
+      console.error('Failed to get requests for offer:', error);
+      throw error;
+    }
+  }
+
+  async respondToInvestmentRequest(requestData: RespondToRequestRequest): Promise<InvestmentRequest> {
+    try {
+      const response = await this.actor.respond_to_investment_request(requestData);
+      if (response.success) {
+        const data = this.unwrapOpt<InvestmentRequest>(response.data);
+        if (data) return data;
+      }
+      const err = this.unwrapText(response.error) || 'Failed to respond to investment request';
+      throw new Error(err);
+    } catch (error) {
+      console.error('Failed to respond to investment request:', error);
+      throw error;
+    }
   }
 }
 
