@@ -40,19 +40,6 @@ Farmers can create agricultural offers, investors can request allocations, and t
 - ✅ Health check monitoring
 - ✅ Transaction transparency and security
 
-## 📊 Platform Statistics
-
-<div align="center">
-
-| Metric | Value |
-|--------|-------|
-| 👥 **Active Users** | 1,200+ |
-| 🌱 **Total Offers** | 450+ |
-| 💰 **Investment Volume** | $2.3M+ |
-| ✅ **Success Rate** | 98.5% |
-
-</div>
-
 ## ⚙️ Setup
 
 ### Prerequisites
