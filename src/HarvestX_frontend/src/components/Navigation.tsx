@@ -47,7 +47,6 @@ const Navigation = () => {
             >
               Marketplace
             </Link>
-
             <Link
               to="/investor-dashboard"
               className={`px-3 py-2 rounded-md transition-colors ${isActive("/investor-dashboard") ? "bg-primary text-primary-foreground" : "hover:bg-muted"
@@ -55,8 +54,6 @@ const Navigation = () => {
             >
               Invest
             </Link>
-
-
             <Link
               to="/farmer-dashboard"
               className={`px-3 py-2 rounded-md transition-colors ${isActive("/farmer-dashboard") ? "bg-primary text-primary-foreground" : "hover:bg-muted"
@@ -64,7 +61,6 @@ const Navigation = () => {
             >
               My Farm
             </Link>
-
           </div>
 
           <div className="flex items-center gap-3">
